@@ -75,6 +75,12 @@ open class Character(val spec: CharSpec, val slot: Int) : Entity() {
     var riding: Vehicle? = null
     var pushing: Pushable? = null
 
+    /** Set while bound to a carousel horse; the ride owns our position and drawing. */
+    var carousel: Carousel? = null
+        private set
+    private var carouselSlot = -1
+    private var seatedOverride = false
+
     var act = Act.NONE
         private set
     private var actT = 0f
@@ -126,6 +132,7 @@ open class Character(val spec: CharSpec, val slot: Int) : Entity() {
     fun exitToWheel(scene: Scene) {
         if (leaving) return
         if (riding != null) dismount(scene)
+        if (carousel != null) dismountCarousel(scene)
         releasePush()
         dropCarried(scene)
         leaving = true
@@ -263,6 +270,35 @@ open class Character(val spec: CharSpec, val slot: Int) : Entity() {
         Sfx.play(Snd.POP)
     }
 
+    fun mountCarousel(car: Carousel, slot: Int) {
+        releasePush()
+        stop()
+        carousel = car
+        carouselSlot = slot
+        // The ride draws us, so we layer correctly among the horses and canopy.
+        visible = false
+    }
+
+    fun dismountCarousel(scene: Scene) {
+        val car = carousel ?: return
+        car.release(this)
+        carousel = null
+        carouselSlot = -1
+        visible = true
+        depth = 170f
+        y = depth
+        x = scene.wrapX(car.x + 330f)
+        facing = 1
+        Sfx.play(Snd.POP)
+    }
+
+    /** Draws a seated character at the origin. Used by rides that own their riders. */
+    fun drawMounted(c: Canvas) {
+        seatedOverride = true
+        draw(c)
+        seatedOverride = false
+    }
+
     fun grab(p: Pushable) {
         if (riding != null) return
         releasePush()
@@ -307,6 +343,13 @@ open class Character(val spec: CharSpec, val slot: Int) : Entity() {
                 scene.fx.sparkles(x, -110f, level, 8, C.WHITE)
                 return
             }
+        }
+
+        if (carousel != null) {
+            // Position comes from the ride; just keep the idle animation ticking.
+            walkT += dt * 5.5f
+            carried?.let { it.x = x; it.y = y - 128f; it.level = level }
+            return
         }
 
         val v = riding
@@ -419,9 +462,9 @@ open class Character(val spec: CharSpec, val slot: Int) : Entity() {
     override fun draw(c: Canvas) {
         computeHand()
         // The entity transform already sits at the feet, so the contact shadow
-        // is at the local origin. Riders get theirs from the vehicle.
-        if (riding == null) D.shadow(c, 0f, 0f, 62f, 16f, 44)
-        val seated = riding != null
+        // is at the local origin. Riders get theirs from the vehicle or ride.
+        if (riding == null && !seatedOverride) D.shadow(c, 0f, 0f, 62f, 16f, 44)
+        val seated = riding != null || seatedOverride
         val b = if (seated) 0f else bob
         val y0 = -b
 

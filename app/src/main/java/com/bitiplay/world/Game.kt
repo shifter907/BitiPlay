@@ -319,6 +319,7 @@ class Game(private val ctx: Context) {
                 saveState()
             }
             Zone.ACTION -> doAction()
+            Zone.HORN -> Sfx.play(Snd.HORN)
             Zone.EXIT -> {
                 val a = active()
                 if (a != null) {
@@ -426,9 +427,13 @@ class Game(private val ctx: Context) {
         saveState()
     }
 
+    /** True while the active character is aboard something with a horn. */
+    fun showHorn(): Boolean = active()?.riding?.motorised == true
+
     private fun doAction() {
         val a = active() ?: return
         when {
+            a.carousel != null -> a.dismountCarousel(scene)
             a.riding != null -> a.dismount(scene)
             a.carried != null -> a.throwCarried(scene, null)
             a.pushing != null -> {
@@ -442,6 +447,7 @@ class Game(private val ctx: Context) {
     fun actionKind(): Int {
         val a = active() ?: return ACT_JUMP
         return when {
+            a.carousel != null -> ACT_OFF
             a.riding != null -> ACT_OFF
             a.carried != null -> ACT_THROW
             a.pushing != null -> ACT_RELEASE

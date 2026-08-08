@@ -71,13 +71,15 @@ class Npc(spec: CharSpec, startX: Float, private val roam: Float = 640f) :
         if (aiT > 0f || targetX != null || busy) return
         aiT = rnd(1.5f, 4.2f)
 
+        // Visiting an animal is the noisy option, so it is now half as likely;
+        // the freed weight goes to silent wandering.
         when (rndInt(0, 10)) {
-            in 0..4 -> wander(scene)
-            in 5..6 -> {
+            in 0..5 -> wander(scene)
+            in 6..7 -> {
                 startAct(Act.CHEER, 0.6f)
                 scene.fx.notes(x, -180f, level, 2)
             }
-            in 7..8 -> visitAnimal(scene)
+            8 -> visitAnimal(scene)
             else -> fetchSomething(scene)
         }
     }

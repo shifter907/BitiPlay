@@ -19,10 +19,15 @@ object Loops {
     var enabled = true
 
     private class Loop(val resIds: IntArray) {
+        // Written by the preparing worker, read by the frame loop.
+        @Volatile
         var player: MediaPlayer? = null
+
+        @Volatile
+        var starting = false
+
         var target = 0f
         var current = 0f
-        var starting = false
     }
 
     private val loops = HashMap<String, Loop>()

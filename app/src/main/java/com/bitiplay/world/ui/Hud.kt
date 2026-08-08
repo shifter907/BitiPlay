@@ -20,7 +20,7 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-enum class Zone { NONE, MAP, MUTE, ACTION, EXIT, WHEEL, WHEEL_PICK, DECK, CARD, SCRIM }
+enum class Zone { NONE, MAP, MUTE, ACTION, EXIT, HORN, WHEEL, WHEEL_PICK, DECK, CARD, SCRIM }
 
 class HudHit(val zone: Zone, val index: Int = 0)
 
@@ -42,6 +42,8 @@ class Hud {
     private var actCX = 0f
     private var actCY = 0f
     private var actR = 0f
+    private var hornCX = 0f
+    private var hornCY = 0f
 
     // switcher wheel
     private var wheelCX = 0f
@@ -96,10 +98,15 @@ class Hud {
         faceR = 3.8f * u
         faceMagR = 6.2f * u
 
+        // The deck stack grows upward, so with four decks the top bubble used to
+        // land directly under the exit button and the exit won the hit test.
         deckR = 5.2f * u
         deckX = w - 8.5f * u
-        deckStep = 12f * u
-        deckY0 = h * 0.46f
+        deckStep = 11f * u
+        deckY0 = h * 0.72f
+
+        hornCX = w - 9f * u
+        hornCY = h * 0.5f
 
         cols = 4
         gapX = 3f * u
@@ -184,13 +191,8 @@ class Hud {
             }
         }
 
-        if (game.active() != null && dist2(x, y, exitCX, exitCY) < sq(btnR * 1.25f)) {
-            return HudHit(Zone.EXIT)
-        }
-        if (dist2(x, y, mapCX, mapCY) < sq(btnR * 1.25f)) return HudHit(Zone.MAP)
-        if (dist2(x, y, muteCX, muteCY) < sq(btnR * 1.25f)) return HudHit(Zone.MUTE)
-        if (dist2(x, y, actCX, actCY) < sq(actR * 1.15f)) return HudHit(Zone.ACTION)
-
+        // Decks are tested before the exit: with four of them the stack reaches
+        // up near the top-right corner.
         val levels = game.scene.levelCount
         if (levels > 1) {
             for (i in 0 until levels) {
@@ -198,6 +200,15 @@ class Hud {
                 if (dist2(x, y, deckX, cy) < sq(deckR * 1.25f)) return HudHit(Zone.DECK, i)
             }
         }
+        if (game.showHorn() && dist2(x, y, hornCX, hornCY) < sq(btnR * 1.25f)) {
+            return HudHit(Zone.HORN)
+        }
+        if (game.active() != null && dist2(x, y, exitCX, exitCY) < sq(btnR * 1.25f)) {
+            return HudHit(Zone.EXIT)
+        }
+        if (dist2(x, y, mapCX, mapCY) < sq(btnR * 1.25f)) return HudHit(Zone.MAP)
+        if (dist2(x, y, muteCX, muteCY) < sq(btnR * 1.25f)) return HudHit(Zone.MUTE)
+        if (dist2(x, y, actCX, actCY) < sq(actR * 1.15f)) return HudHit(Zone.ACTION)
         return HudHit(Zone.NONE)
     }
 
@@ -230,6 +241,11 @@ class Hud {
         drawSpeakerGlyph(c, muteCX, muteCY, btnR * 0.58f, game.soundOn)
 
         drawActionButton(c, game)
+
+        if (game.showHorn()) {
+            drawRoundButton(c, hornCX, hornCY, btnR, C.YELLOW)
+            drawHornGlyph(c, hornCX, hornCY, btnR * 0.66f)
+        }
 
         if (game.scene.levelCount > 1) drawDecks(c, game)
         if (game.toastT > 0f) drawToast(c, game)
@@ -332,6 +348,19 @@ class Hud {
             c, cx + r * 1.15f, cy, cx + r * 0.6f, cy - r * 0.42f,
             cx + r * 0.6f, cy + r * 0.42f, C.UI_TEXT
         )
+    }
+
+    private fun drawHornGlyph(c: Canvas, cx: Float, cy: Float, r: Float) {
+        // a little bulb horn
+        D.shape(c, C.UI_TEXT) { p ->
+            p.moveTo(cx - r * 0.1f, cy - r * 0.55f)
+            p.lineTo(cx + r * 0.95f, cy - r * 0.95f)
+            p.lineTo(cx + r * 0.95f, cy + r * 0.35f)
+            p.lineTo(cx - r * 0.1f, cy + r * 0.0f)
+        }
+        D.circle(c, cx - r * 0.55f, cy - r * 0.25f, r * 0.5f, C.RED_DARK)
+        D.circle(c, cx - r * 0.7f, cy - r * 0.4f, r * 0.18f, withAlpha(C.WHITE, 150))
+        D.arcLine(c, cx + r * 1.0f, cy - r * 0.3f, r * 0.5f, r * 0.5f, -60f, 120f, C.UI_TEXT, r * 0.16f)
     }
 
     private fun drawMapGlyph(c: Canvas, cx: Float, cy: Float, r: Float) {

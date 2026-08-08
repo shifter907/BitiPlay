@@ -547,17 +547,9 @@ class Amusement : Scene("park", "Amusement Park") {
                 true
             })
 
-        carouselXs.add(x + 1050f)
-        add(Prop(x + 1050f, 60f, Z.MAIN, 1f, 0) { cc, p -> carousel(cc, p.f0) }
-            .onUpdate { dt, _, p -> p.f0 += dt * (0.42f + p.f1); p.f1 = maxOf(0f, p.f1 - dt * 0.22f) }
-            .sized(460f, 500f, -250f)
-            .interactive("ride the carousel") { ch, sc, p ->
-                p.f1 = 1.3f
-                ch.cheer(sc)
-                sc.fx.notes(p.x, -400f, p.level, 5)
-                Sfx.play(Snd.HAPPY)
-                true
-            })
+        // Set well back from the walking line so it reads as further away.
+        carouselXs.add(x + 1150f)
+        add(com.bitiplay.world.ent.Carousel(x + 1150f, -150f))
 
         add(Dispenser(x + 500f, ItemKind.BALLOON, "a balloon", Z.MAIN) { cc, p ->
             D.shadow(cc, 0f, 0f, 70f, 13f)

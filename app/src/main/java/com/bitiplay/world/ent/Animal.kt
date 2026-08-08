@@ -221,8 +221,312 @@ class Animal(val kind: AnimalKind, startX: Float) : Entity() {
         val hopY = if (hop > 0f) -abs(sin(hop * TAU)) * 26f else 0f
         c.save()
         c.translate(0f, hopY)
-        if (kind.biped) drawBiped(c) else drawQuadruped(c)
+        // Species whose silhouette the shared rig cannot produce get their own.
+        when (kind) {
+            AnimalKind.HORSE, AnimalKind.ZEBRA -> drawEquine(c)
+            AnimalKind.GIRAFFE -> drawGiraffe(c)
+            AnimalKind.ELEPHANT -> drawElephant(c)
+            AnimalKind.LION -> drawLion(c)
+            AnimalKind.MONKEY -> drawMonkey(c)
+            else -> if (kind.biped) drawBiped(c) else drawQuadruped(c)
+        }
         c.restore()
+    }
+
+    // ------------------------------------------------------- bespoke species
+
+    private val trim: Int
+        get() = if (kind.patColor != 0) kind.patColor else shade(kind.body, 0.66f)
+
+    /** Jointed leg with a knee and a hoof, for horses, zebras and giraffes. */
+    private fun hoofLeg(c: Canvas, cx: Float, top: Float, sw: Float, col: Int, thick: Float) {
+        val kneeY = top + (0f - top) * 0.45f
+        val kx = cx + sw * 7f
+        val fx = cx + sw * 18f
+        D.capsule(c, cx, top, kx, kneeY, thick, col)
+        D.capsule(c, kx, kneeY, fx, -6f, thick * 0.66f, col)
+        D.rectC(c, fx, -6f, thick * 0.95f, 12f, shade(col, 0.62f), 4f)
+    }
+
+    private fun drawEquine(c: Canvas) {
+        val bx = kind.bodyRX
+        val by = kind.bodyRY
+        val col = kind.body
+        val far = shade(col, 0.84f)
+        val bcy = -(kind.legLen + by) + breathe
+        val sw = swing
+        D.shadow(c, 0f, 0f, bx * 1.15f, bx * 0.28f)
+
+        hoofLeg(c, -bx * 0.5f, bcy + by * 0.4f, -sw, far, kind.legThick)
+        hoofLeg(c, bx * 0.6f, bcy + by * 0.4f, sw, far, kind.legThick)
+
+        // tail hanging from a high dock
+        val wag = sin(t * 2.2f + seed) * 0.2f
+        D.stroke(c, trim, by * 0.4f) { p ->
+            p.moveTo(-bx * 0.88f, bcy - by * 0.45f)
+            p.quadTo(-bx * 1.3f, bcy + by * 0.3f + wag * 50f, -bx * 1.05f, bcy + by * 1.6f)
+        }
+
+        // deep barrel, higher at the withers than the croup
+        D.shape(c, col) { p ->
+            p.moveTo(-bx * 0.92f, bcy - by * 0.5f)
+            p.quadTo(0f, bcy - by * 1.02f, bx * 0.88f, bcy - by * 0.78f)
+            p.quadTo(bx * 1.12f, bcy + by * 0.3f, bx * 0.7f, bcy + by * 0.92f)
+            p.quadTo(0f, bcy + by * 1.14f, -bx * 0.86f, bcy + by * 0.78f)
+        }
+        D.oval(c, bx * 0.1f, bcy + by * 0.5f, bx * 0.55f, by * 0.4f, kind.belly)
+        drawPattern(c, bcy)
+
+        hoofLeg(c, -bx * 0.36f, bcy + by * 0.4f, sw, col, kind.legThick)
+        hoofLeg(c, bx * 0.76f, bcy + by * 0.4f, -sw, col, kind.legThick)
+
+        // neck wedge up to the poll
+        val r = kind.headR
+        val nx = bx * 0.7f
+        val ny = bcy - by * 0.62f
+        val hx = nx + kind.neck * 0.5f
+        val hy = ny - kind.neck * 0.95f - r * 0.2f + breathe + eatBob * (kind.neck + kind.legLen) * 0.55f
+        D.shape(c, col) { p ->
+            p.moveTo(nx - bx * 0.26f, ny + by * 0.42f)
+            p.lineTo(hx - r * 0.62f, hy + r * 0.4f)
+            p.lineTo(hx + r * 0.34f, hy + r * 0.52f)
+            p.lineTo(nx + bx * 0.32f, ny + by * 0.6f)
+        }
+        D.stroke(c, trim, r * 0.38f) { p ->
+            p.moveTo(nx - bx * 0.14f, ny + by * 0.12f)
+            p.quadTo((nx + hx) * 0.5f - 10f, (ny + hy) * 0.5f - 14f, hx - r * 0.42f, hy - r * 0.45f)
+        }
+
+        c.save()
+        c.translate(hx, hy)
+        c.rotate(20f)
+        D.tri(c, -r * 0.52f, -r * 0.3f, -r * 0.16f, -r * 0.36f, -r * 0.4f, -r * 1.0f, shade(col, 0.9f))
+        D.tri(c, -r * 0.26f, -r * 0.34f, r * 0.06f, -r * 0.36f, -r * 0.12f, -r * 1.02f, col)
+        D.oval(c, 0f, 0f, r * 1.12f, r * 0.6f, col)
+        D.oval(c, r * 0.92f, r * 0.1f, r * 0.4f, r * 0.38f, shade(col, 1.1f))
+        D.circle(c, r * 1.1f, r * 0.08f, r * 0.11f, C.BLACK)
+        D.circle(c, -r * 0.2f, -r * 0.26f, r * 0.15f, C.BLACK)
+        c.restore()
+    }
+
+    private fun drawGiraffe(c: Canvas) {
+        val bx = kind.bodyRX
+        val by = kind.bodyRY
+        val col = kind.body
+        val far = shade(col, 0.85f)
+        val bcy = -(kind.legLen + by) + breathe
+        val sw = swing
+        D.shadow(c, 0f, 0f, bx * 1.05f, bx * 0.26f)
+
+        hoofLeg(c, -bx * 0.46f, bcy + by * 0.4f, -sw, far, kind.legThick)
+        hoofLeg(c, bx * 0.56f, bcy + by * 0.4f, sw, far, kind.legThick)
+        D.stroke(c, trim, by * 0.22f) { p ->
+            p.moveTo(-bx * 0.88f, bcy - by * 0.3f)
+            p.quadTo(-bx * 1.16f, bcy + by * 0.6f, -bx * 1.0f, bcy + by * 1.5f)
+        }
+        D.circle(c, -bx * 1.0f, bcy + by * 1.6f, by * 0.24f, trim)
+
+        // back slopes down from the shoulder
+        D.shape(c, col) { p ->
+            p.moveTo(-bx * 0.9f, bcy - by * 0.1f)
+            p.quadTo(-bx * 0.2f, bcy - by * 0.78f, bx * 0.9f, bcy - by * 0.98f)
+            p.quadTo(bx * 1.1f, bcy + by * 0.3f, bx * 0.66f, bcy + by * 0.9f)
+            p.quadTo(0f, bcy + by * 1.06f, -bx * 0.84f, bcy + by * 0.62f)
+        }
+        drawPattern(c, bcy)
+
+        hoofLeg(c, -bx * 0.32f, bcy + by * 0.4f, sw, col, kind.legThick)
+        hoofLeg(c, bx * 0.72f, bcy + by * 0.4f, -sw, col, kind.legThick)
+
+        // the long neck, tapering
+        val r = kind.headR
+        val nx = bx * 0.66f
+        val ny = bcy - by * 0.8f
+        val dip = eatBob * (kind.neck * 0.75f)
+        val hx = nx + kind.neck * 0.3f
+        val hy = ny - kind.neck + dip
+        D.shape(c, col) { p ->
+            p.moveTo(nx - bx * 0.3f, ny + by * 0.5f)
+            p.lineTo(hx - r * 0.5f, hy + r * 0.3f)
+            p.lineTo(hx + r * 0.34f, hy + r * 0.4f)
+            p.lineTo(nx + bx * 0.34f, ny + by * 0.7f)
+        }
+        // neck spots follow the taper
+        for (k in 0 until 7) {
+            val u = (k + 0.5f) / 7f
+            val sxp = nx + (hx - nx) * u
+            val syp = ny + (hy - ny) * u
+            D.ngon(c, sxp - r * 0.06f, syp, r * 0.24f * (1f - u * 0.35f), 6, kind.patColor, u * 2f)
+        }
+        D.stroke(c, trim, r * 0.26f) { p ->
+            p.moveTo(nx - bx * 0.16f, ny + by * 0.2f)
+            p.quadTo((nx + hx) * 0.5f - 12f, (ny + hy) * 0.5f, hx - r * 0.44f, hy - r * 0.2f)
+        }
+
+        c.save()
+        c.translate(hx, hy)
+        c.rotate(14f)
+        // ossicones
+        D.capsule(c, -r * 0.24f, -r * 0.35f, -r * 0.32f, -r * 1.15f, r * 0.16f, col)
+        D.circle(c, -r * 0.32f, -r * 1.2f, r * 0.2f, trim)
+        D.capsule(c, r * 0.1f, -r * 0.4f, r * 0.04f, -r * 1.2f, r * 0.16f, col)
+        D.circle(c, r * 0.04f, -r * 1.25f, r * 0.2f, trim)
+        D.oval(c, 0f, 0f, r * 1.0f, r * 0.58f, col)
+        D.tri(c, -r * 0.5f, -r * 0.1f, -r * 0.2f, -r * 0.15f, -r * 1.0f, -r * 0.5f, shade(col, 0.9f))
+        D.oval(c, r * 0.86f, r * 0.14f, r * 0.36f, r * 0.34f, shade(col, 1.12f))
+        D.circle(c, r * 1.0f, r * 0.12f, r * 0.1f, C.BLACK)
+        D.circle(c, -r * 0.06f, -r * 0.24f, r * 0.16f, C.BLACK)
+        c.restore()
+    }
+
+    private fun drawElephant(c: Canvas) {
+        val bx = kind.bodyRX
+        val by = kind.bodyRY
+        val col = kind.body
+        val far = shade(col, 0.85f)
+        val bcy = -(kind.legLen + by) + breathe
+        val sw = swing
+        D.shadow(c, 0f, 0f, bx * 1.1f, bx * 0.28f)
+
+        // pillar legs
+        for (p in 0 until 2) {
+            val cc = if (p == 0) far else col
+            val o = if (p == 0) 0f else 26f
+            val s = if (p == 0) -sw else sw
+            D.capsule(c, -bx * 0.5f + o, bcy + by * 0.5f, -bx * 0.5f + o + s * 8f, -10f, kind.legThick, cc)
+            D.capsule(c, bx * 0.55f + o, bcy + by * 0.5f, bx * 0.55f + o - s * 8f, -10f, kind.legThick, cc)
+            D.oval(c, -bx * 0.5f + o + s * 8f, -8f, kind.legThick * 0.62f, 10f, shade(cc, 0.72f))
+            D.oval(c, bx * 0.55f + o - s * 8f, -8f, kind.legThick * 0.62f, 10f, shade(cc, 0.72f))
+        }
+
+        D.stroke(c, col, by * 0.14f) { p ->
+            p.moveTo(-bx * 0.92f, bcy - by * 0.2f)
+            p.quadTo(-bx * 1.12f, bcy + by * 0.5f, -bx * 1.02f, bcy + by * 1.1f)
+        }
+
+        // huge rounded body
+        D.oval(c, 0f, bcy, bx, by, col)
+        D.oval(c, bx * 0.05f, bcy + by * 0.45f, bx * 0.66f, by * 0.44f, kind.belly)
+
+        val r = kind.headR
+        val hx = bx * 0.78f
+        val hy = bcy - by * 0.5f + breathe
+        // ear behind the head
+        D.oval(c, hx - r * 0.5f, hy + r * 0.15f, r * 0.92f, r * 1.05f, shade(col, 0.8f))
+        D.circle(c, hx, hy, r, col)
+        D.oval(c, hx - r * 0.15f, hy + r * 0.1f, r * 0.85f, r * 0.98f, shade(col, 1.06f))
+        // trunk
+        val curl = sin(t * 1.4f + seed) * 0.16f + eatBob * 0.5f
+        D.stroke(c, col, r * 0.42f) { p ->
+            p.moveTo(hx + r * 0.55f, hy + r * 0.25f)
+            p.quadTo(hx + r * 1.5f, hy + r * 1.1f, hx + r * (1.15f + curl), hy + r * 2.15f)
+        }
+        D.circle(c, hx + r * (1.15f + curl), hy + r * 2.25f, r * 0.19f, shade(col, 0.86f))
+        // tusks
+        D.stroke(c, C.OFF_WHITE, r * 0.13f) { p ->
+            p.moveTo(hx + r * 0.42f, hy + r * 0.55f)
+            p.quadTo(hx + r * 0.95f, hy + r * 1.0f, hx + r * 1.05f, hy + r * 0.6f)
+        }
+        D.circle(c, hx + r * 0.34f, hy - r * 0.18f, r * 0.15f, C.BLACK)
+        D.circle(c, hx - r * 0.28f, hy - r * 0.2f, r * 0.13f, C.BLACK)
+    }
+
+    private fun drawLion(c: Canvas) {
+        val bx = kind.bodyRX
+        val by = kind.bodyRY
+        val col = kind.body
+        val far = shade(col, 0.85f)
+        val bcy = -(kind.legLen + by) + breathe
+        val sw = swing
+        D.shadow(c, 0f, 0f, bx * 1.15f, bx * 0.3f)
+
+        leg(c, -bx * 0.55f, -sw, far)
+        leg(c, bx * 0.6f, sw, far)
+
+        // tufted tail
+        val wag = sin(t * 2.6f + seed) * 0.3f
+        D.stroke(c, col, kind.legThick * 0.42f) { p ->
+            p.moveTo(-bx * 0.88f, bcy - by * 0.1f)
+            p.quadTo(-bx * 1.35f, bcy - by * 0.5f + wag * 40f, -bx * 1.1f, bcy - by * 1.0f + wag * 30f)
+        }
+        D.circle(c, -bx * 1.1f, bcy - by * 1.1f + wag * 30f, kind.legThick * 0.5f, trim)
+
+        D.shape(c, col) { p ->
+            p.moveTo(-bx * 0.92f, bcy - by * 0.35f)
+            p.quadTo(0f, bcy - by * 0.95f, bx * 0.85f, bcy - by * 0.6f)
+            p.quadTo(bx * 1.08f, bcy + by * 0.4f, bx * 0.7f, bcy + by * 0.95f)
+            p.quadTo(0f, bcy + by * 1.12f, -bx * 0.88f, bcy + by * 0.8f)
+        }
+        D.oval(c, bx * 0.08f, bcy + by * 0.5f, bx * 0.58f, by * 0.42f, kind.belly)
+
+        leg(c, -bx * 0.4f, sw, col)
+        leg(c, bx * 0.74f, -sw, col)
+
+        val r = kind.headR
+        val hx = bx * 0.86f
+        val hy = bcy - by * 0.75f + breathe
+        // the mane is the whole silhouette
+        for (k in 0 until 11) {
+            val a = k * TAU / 11f
+            D.circle(c, hx + cos(a) * r * 0.92f, hy + sin(a) * r * 0.92f, r * 0.5f, trim)
+        }
+        D.circle(c, hx, hy, r * 1.05f, shade(trim, 1.12f))
+        D.circle(c, hx, hy, r * 0.78f, col)
+        D.oval(c, hx + r * 0.34f, hy + r * 0.36f, r * 0.5f, r * 0.36f, kind.belly)
+        D.tri(c, hx + r * 0.16f, hy + r * 0.2f, hx + r * 0.52f, hy + r * 0.2f, hx + r * 0.34f, hy + r * 0.4f, C.BLACK)
+        D.circle(c, hx + r * 0.34f, hy - r * 0.22f, r * 0.13f, C.BLACK)
+        D.circle(c, hx - r * 0.22f, hy - r * 0.24f, r * 0.12f, C.BLACK)
+        D.line(c, hx + r * 0.5f, hy + r * 0.3f, hx + r * 1.1f, hy + r * 0.15f, withAlpha(C.BLACK, 110), 3f)
+        D.line(c, hx + r * 0.5f, hy + r * 0.44f, hx + r * 1.12f, hy + r * 0.5f, withAlpha(C.BLACK, 110), 3f)
+    }
+
+    private fun drawMonkey(c: Canvas) {
+        val bx = kind.bodyRX
+        val by = kind.bodyRY
+        val col = kind.body
+        val far = shade(col, 0.84f)
+        val bcy = -(kind.legLen + by) + breathe
+        val sw = swing
+        val r = kind.headR
+        D.shadow(c, 0f, 0f, bx * 1.15f, bx * 0.32f)
+
+        // curled prehensile tail
+        val curl = sin(t * 1.8f + seed) * 0.2f
+        D.stroke(c, col, kind.legThick * 0.5f) { p ->
+            p.moveTo(-bx * 0.7f, bcy + by * 0.2f)
+            p.quadTo(-bx * 1.7f, bcy + by * 0.5f, -bx * 1.55f, bcy - by * 0.9f + curl * 30f)
+            p.quadTo(-bx * 1.4f, bcy - by * 1.7f, -bx * 0.85f, bcy - by * 1.35f + curl * 20f)
+        }
+
+        // far limbs
+        D.capsule(c, -bx * 0.3f, bcy + by * 0.3f, -bx * 0.55f + sw * 10f, -6f, kind.legThick, far)
+        D.capsule(c, bx * 0.3f, bcy - by * 0.4f, bx * 0.8f - sw * 14f, bcy + by * 0.9f, kind.legThick * 0.85f, far)
+
+        // hunched body
+        D.oval(c, 0f, bcy, bx, by, col)
+        D.oval(c, bx * 0.06f, bcy + by * 0.34f, bx * 0.62f, by * 0.56f, kind.belly)
+
+        // near limbs: long arms reaching the ground
+        D.capsule(c, -bx * 0.15f, bcy + by * 0.35f, -bx * 0.35f - sw * 10f, -6f, kind.legThick, col)
+        D.oval(c, -bx * 0.35f - sw * 10f, -6f, kind.legThick * 0.6f, 8f, shade(col, 0.76f))
+        D.capsule(c, bx * 0.42f, bcy - by * 0.35f, bx * 0.92f + sw * 14f, bcy + by * 1.0f, kind.legThick * 0.9f, col)
+        D.circle(c, bx * 0.95f + sw * 14f, bcy + by * 1.05f, kind.legThick * 0.55f, shade(col, 0.8f))
+
+        // head: round, ears out to the sides, flat pale face
+        val hx = bx * 0.62f
+        val hy = bcy - by * 0.95f + breathe + eatBob * by * 0.7f
+        D.circle(c, hx - r * 0.95f, hy + r * 0.1f, r * 0.42f, col)
+        D.circle(c, hx - r * 0.95f, hy + r * 0.1f, r * 0.24f, kind.belly)
+        D.circle(c, hx + r * 0.95f, hy + r * 0.1f, r * 0.42f, col)
+        D.circle(c, hx + r * 0.95f, hy + r * 0.1f, r * 0.24f, kind.belly)
+        D.circle(c, hx, hy, r, col)
+        D.oval(c, hx + r * 0.1f, hy + r * 0.18f, r * 0.76f, r * 0.72f, kind.belly)
+        D.oval(c, hx + r * 0.14f, hy + r * 0.46f, r * 0.4f, r * 0.24f, shade(kind.belly, 0.9f))
+        D.circle(c, hx + r * 0.02f, hy + r * 0.34f, r * 0.07f, C.BLACK)
+        D.circle(c, hx + r * 0.3f, hy + r * 0.34f, r * 0.07f, C.BLACK)
+        D.circle(c, hx - r * 0.2f, hy - r * 0.16f, r * 0.15f, C.BLACK)
+        D.circle(c, hx + r * 0.42f, hy - r * 0.16f, r * 0.15f, C.BLACK)
+        D.arcLine(c, hx + r * 0.16f, hy + r * 0.52f, r * 0.28f, r * 0.16f, 20f, 140f, C.BLACK, 3f)
     }
 
     private val swing: Float get() = if (mode == 1) sin(walkT) else 0f

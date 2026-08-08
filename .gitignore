@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+build/
+.kotlin/
+
+# The wrapper jar must be committed so the project builds on a clean clone.
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.cxx/
+captures/
+
+# Machine-specific: points at this machine's Android SDK.
+local.properties
+
+# Signing material - never commit these.
+*.jks
+*.keystore
+keystore.properties
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- sky -->
+    <path
+        android:fillColor="#7FD4F2"
+        android:pathData="M0,0 H108 V108 H0 Z" />
+    <!-- sun -->
+    <path
+        android:fillColor="#FFD34E"
+        android:pathData="M82,26 m-13,0 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 Z" />
+    <!-- distant hill -->
+    <path
+        android:fillColor="#8CD98C"
+        android:pathData="M0,72 C18,54 36,54 54,70 C72,54 90,54 108,72 L108,108 L0,108 Z" />
+    <!-- ground -->
+    <path
+        android:fillColor="#6FC46F"
+        android:pathData="M0,80 H108 V108 H0 Z" />
+    <!-- character body -->
+    <path
+        android:fillColor="#FF9E5E"
+        android:pathData="M38,84 m-14,-10 a14,16 0 1,0 28,0 a14,16 0 1,0 -28,0 Z" />
+    <!-- character head -->
+    <path
+        android:fillColor="#FFB07A"
+        android:pathData="M38,54 m-15,0 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 Z" />
+    <!-- ears -->
+    <path
+        android:fillColor="#FF9E5E"
+        android:pathData="M27,44 L23,32 L36,40 Z M49,44 L53,32 L40,40 Z" />
+    <!-- eyes -->
+    <path
+        android:fillColor="#2E2A2A"
+        android:pathData="M32,53 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 Z M44,53 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 Z" />
+    <!-- ball -->
+    <path
+        android:fillColor="#F45B69"
+        android:pathData="M74,88 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0 Z" />
+</vector>

@@ -1,0 +1,14 @@
+# Normalise text to LF in the repository, native in the working copy.
+* text=auto
+
+# The Gradle wrapper script is executed by sh; CRLF breaks it on Linux/macOS.
+gradlew text eol=lf
+*.bat text eol=crlf
+
+# Never touch these.
+*.jar binary
+*.mp3 binary
+*.ogg binary
+*.wav binary
+*.png binary
+*.jpg binary
